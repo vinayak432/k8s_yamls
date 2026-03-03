@@ -1,307 +1,385 @@
-Kubernetes on AWS – Jenkins & Tomcat Deployment Repo
-📌 Overview
-
-This repository contains Kubernetes manifests for deploying:
-
-Jenkins (multiple deployment patterns)
-
-Tomcat application
+# 🚀 Kubernetes on AWS – Complete Workload & Storage Lab
+
+![Kubernetes](https://img.shields.io/badge/Kubernetes-1.33-blue?logo=kubernetes)
+![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20EBS%20%7C%20EFS-orange?logo=amazonaws)
+![Storage](https://img.shields.io/badge/Storage-HostPath%20%7C%20EBS%20%7C%20EFS-yellow)
+![Workloads](https://img.shields.io/badge/Workloads-Jenkins%20%7C%20Nginx%20%7C%20Tomcat-green)
+![CNI](https://img.shields.io/badge/CNI-Calico-blue)
+![Containerd](https://img.shields.io/badge/Runtime-Containerd-5c4ee5)
+
+---
+
+# 📌 Overview
+
+This repository is a **comprehensive Kubernetes lab project** built on AWS EC2 using `kubeadm`.
+
+It demonstrates:
+
+* 📦 Static & Dynamic Persistent Volumes
+* 💾 AWS EBS (Block Storage)
+* 📂 AWS EFS (Shared RWX Storage)
+* 🧑‍💻 Jenkins deployments (multiple patterns)
+* 🌐 Nginx scheduling & affinity rules
+* ☕ Tomcat deployments
+* 🔄 ReplicaSets, Deployments, DaemonSets
+* 🎯 NodeSelector, Node Affinity, Pod Affinity/Anti-Affinity
+* 🌍 LoadBalancer Services (AWS integration)
+
+This repo is ideal for:
+
+* DevOps practice
+* Kubernetes interviews
+* Storage deep dive
+* Scheduling strategies lab
+* AWS + Kubernetes integration learning
+
+---
+
+# 🏗 High-Level Architecture
+
+```
+                         ┌────────────────────────┐
+                         │        AWS Cloud       │
+                         └────────────────────────┘
+                                      │
+                    ┌─────────────────────────────────┐
+                    │              VPC                │
+                    └─────────────────────────────────┘
+                          │                     │
+                ┌─────────┴─────────┐   ┌───────┴─────────┐
+                │  Control Plane    │   │   Worker Nodes   │
+                │  (kubeadm)        │   │ (EC2 Instances)  │
+                └────────────────────┘   └──────────────────┘
+                           │                       │
+                 ┌───────────────┐       ┌────────────────────┐
+                 │  Scheduler    │       │ kubelet + containerd│
+                 │  API Server   │       │ Calico CNI          │
+                 └───────────────┘       └────────────────────┘
+                                                │
+                        ┌───────────────────────┼────────────────────────┐
+                        │                       │                        │
+                    HostPath                  EBS CSI                 EFS CSI
+                    (local)                   (RWO)                   (RWX)
+                        │                       │                        │
+                Jenkins / Nginx / Tomcat Workloads using PV/PVC
+```
 
-AWS EBS dynamic provisioning
+---
 
-AWS EFS dynamic provisioning
+# 📂 Repository Structure
+
+## 🔹 Jenkins
+
+* `jenkins-pod.yaml`
+* `jenkins-rs.yaml`
+* `jenkins-deployment.yaml`
+* `jenkins-daemonset.yaml`
+* `jenkins-service.yaml`
+* `jenkins-efs-test.yaml`
+* `jen_host.yaml` (HostPath version)
+
+### Demonstrates:
+
+* Pod vs ReplicaSet vs Deployment
+* DaemonSet behavior
+* Persistent storage
+* Service exposure
+
+---
+
+## 🔹 Nginx
+
+Located under `nginx/`
+
+Includes:
+
+* `nginx-pod.yaml`
+* `nginx-rs.yaml`
+* `nginx-rs-toleration.yaml`
+* `nginx-daemonset.yaml`
+* `nginx_deployment.yaml`
+* `nginx_service_lb.yaml`
+* `nginx_backend.yaml`
 
-AWS Cloud Controller Manager configuration 
+### Advanced Scheduling Examples
 
-Services (ClusterIP / LoadBalancer)
+* `nginx_deploy_nodeselector.yaml`
+* `nginx_deploy_nodeaff_hard_rule.yaml`
+* `nginx_deploy_nodeaff_soft_rule.yaml`
+* `nginx_deploy_podaff.yaml`
+* `nginx_deploy_podantiaff.yaml`
 
-ReplicaSets, Deployments, DaemonSets
+### Demonstrates:
 
-Persistent Volumes (static & dynamic)
+* NodeSelector
+* Node Affinity (hard & soft)
+* Pod Affinity
+* Pod Anti-Affinity
+* Tolerations
+* LoadBalancer services
 
-This setup is designed for a kubeadm-based Kubernetes cluster running on AWS EC2.
+---
 
-🏗 Architecture Diagram (ASCII)
-                           ┌──────────────────────────┐
-                           │        AWS Cloud         │
-                           └──────────────────────────┘
-                                       │
-               ┌────────────────────────────────────────────┐
-               │                    VPC                     │
-               └────────────────────────────────────────────┘
-                         │                         │
-                ┌────────┴────────┐        ┌───────┴────────┐
-                │  Control Plane  │        │   Worker Node  │
-                │  (kubeadm)      │        │  (EC2)         │
-                ├──────────────────┤        ├────────────────┤
-                │ kube-apiserver  │        │ kubelet        │
-                │ etcd            │        │ containerd     │
-                │ controller-mgr  │        │ calico-node    │
-                └──────────────────┘        └────────────────┘
-                                                      │
-                                      ┌───────────────┼───────────────┐
-                                      │                               │
-                               ┌─────────────┐                ┌─────────────┐
-                               │   EBS CSI   │                │   EFS CSI   │
-                               └─────────────┘                └─────────────┘
-                                      │                               │
-                               ┌─────────────┐                ┌─────────────┐
-                               │  EBS Volume │                │  EFS FS     │
-                               │  (RWO)      │                │  (RWX)      │
-                               └─────────────┘                └─────────────┘
-                                      │                               │
-                               ┌─────────────┐                ┌─────────────┐
-                               │  Jenkins    │                │  Tomcat     │
-                               └─────────────┘                └─────────────┘
-🔄 Deployment Flow Diagram
-Developer → kubectl apply
-            ↓
-API Server validates YAML
-            ↓
-Scheduler selects Worker Node
-            ↓
-PVC Created
-            ↓
-CSI Driver Provisions Volume
-            ↓
-PV Bound to PVC
-            ↓
-Pod Scheduled
-            ↓
-Container Started
-            ↓
-Service Exposed (ClusterIP / LoadBalancer)
-            ↓
-AWS Load Balancer Created (if type=LoadBalancer)
+## 🔹 Tomcat
 
-🏗 Architecture
+* `tomcat_pod.yaml`
+* `tomcat-rs.yaml`
+* `tomcat-deployment.yaml`
+* `tomcat-daemonset.yaml`
+* `tomcat_service_lb.yaml`
 
-Kubernetes installed using kubeadm
+### Demonstrates:
 
-Calico CNI for networking
+* Stateless web deployment
+* Scaling
+* AWS LoadBalancer service
 
-AWS Load Balancer Controller
+---
 
-EBS CSI Driver (for block storage)
+## 🔹 Storage Examples
 
-EFS CSI Driver (for shared storage)
+### Static Storage
 
-📁 Repository Structure
+* `pv.yaml`
+* `pvc.yaml`
+* `pvcmnt.yaml`
+* `pvc_mnt.yaml`
+* `hostpath-eg.yaml`
 
-🔹 Storage Configuration
-EBS (Block Storage)
+### EBS Dynamic Provisioning
 
-ebs-sc.yaml → StorageClass for EBS dynamic provisioning
+* `ebs-sc.yaml`
+* `ebs-test-pvc.yaml`
+* `ebs-test-pod.yaml`
 
-ebs-test-pvc.yaml → PVC using EBS
+### EFS Dynamic Provisioning
 
-ebs-test-pod.yaml → Test pod mounting EBS volume
+* `efs-sc.yaml`
+* `efs-test-pvc.yaml`
+* `efs-test-pod.yaml`
+* `efs-test-pod-2.yaml`
 
-Use case:
+---
 
-Single-node ReadWriteOnce storage
+# 🧪 Learning Modules Covered
 
-Stateful apps needing block storage
+| Feature               | Covered |
+| --------------------- | ------- |
+| Static PV             | ✅       |
+| HostPath              | ✅       |
+| EBS Dynamic           | ✅       |
+| EFS Dynamic           | ✅       |
+| RWX vs RWO            | ✅       |
+| ReplicaSets           | ✅       |
+| Deployments           | ✅       |
+| DaemonSets            | ✅       |
+| NodeSelector          | ✅       |
+| Node Affinity         | ✅       |
+| Pod Affinity          | ✅       |
+| Pod Anti-Affinity     | ✅       |
+| Tolerations           | ✅       |
+| LoadBalancer Services | ✅       |
 
-EFS (Shared Storage)
+---
 
-efs-sc.yaml → StorageClass for EFS (dynamic Access Points)
+# 🚀 Step-By-Step Lab Guide
 
-efs-test-pvc.yaml → PVC using EFS
+---
 
-efs-test-pod.yaml → Test pod mounting EFS
+## 🥇 Phase 1 – Setup Kubernetes (kubeadm on EC2)
 
-efs-test-pod-2.yaml → Multi-pod test for RWX validation
-
-jenkins-efs-test.yaml → Jenkins using EFS backend
-
-Use case:
-
-Shared ReadWriteMany storage
-
-Multi-pod shared data
-
-Jenkins home directory (production style)
-
-⚠ Important:
-EFS File System must be created manually in AWS before dynamic provisioning works.
-
-🔹 Static Volume Examples
-
-pv.yaml → Static PersistentVolume
-
-pvc.yaml → PVC bound to static PV
-
-pvc_mnt.yaml → Pod mounting static PVC
-
-Use case:
-
-Learning PV/PVC binding
-
-Non-dynamic environments
-
-🔹 Jenkins Deployments
-
-Multiple Jenkins deployment methods included:
-
-jenkins-pod.yaml → Single pod
-
-jenkins-rs.yaml → ReplicaSet
-
-jenkins-deployment.yaml → Deployment
-
-jenkins-daemonset.yaml → DaemonSet
-
-jen_host.yaml → HostPath-based Jenkins
-
-jenkins-service.yaml → Service exposure
-
-Deployment options demonstrated:
-
-Method	Purpose
-Pod	Basic understanding
-ReplicaSet	Pod management
-Deployment	Production approach
-DaemonSet	Per-node instance
-HostPath	Local node storage
-EFS	Shared persistent storage
-🔹 Tomcat Application
-
-Inside tomcat/ directory:
-
-tomcat_pod.yaml
-
-tomcat-rs.yaml
-
-tomcat-deployment.yaml
-
-tomcat_service_lb.yaml
-
-Demonstrates:
-
-Web application deployment
-
-Replica scaling
-
-AWS LoadBalancer service
-
-🔹 AWS Cloud Components
-
-aws-ccm-values.yaml → AWS Cloud Controller Manager configuration
-
-Used when:
-
-Integrating Kubernetes with AWS infrastructure
-
-Managing LoadBalancers and node metadata
-
-🚀 Setup Guide
-1️⃣ Prerequisites
-
-EC2 instances (Control Plane + Worker)
-
-IAM role attached to nodes:
-
-AmazonEBSCSIDriverPolicy
-
-AmazonEFSCSIDriverPolicy
-
-Security groups allowing:
-
-6443 (API Server)
-
-2049 (EFS NFS)
-
-Node-to-node traffic
-
-2️⃣ Install Storage Drivers
-EBS CSI Driver
-
-Required for dynamic EBS provisioning.
-
-EFS CSI Driver
-
-Required for dynamic EFS provisioning.
-EFS File System must exist in AWS.
-
-3️⃣ Apply StorageClass
-kubectl apply -f ebs-sc.yaml
-kubectl apply -f efs-sc.yaml
-4️⃣ Create PVC
-kubectl apply -f ebs-test-pvc.yaml
-kubectl apply -f efs-test-pvc.yaml
+1. Install containerd
+2. Disable swap
+3. Install kubeadm, kubelet, kubectl
+4. Initialize control plane
+5. Join worker nodes
+6. Install Calico CNI
 
 Verify:
 
-kubectl get pvc
+```bash
+kubectl get nodes
+kubectl get pods -n kube-system
+```
 
-Status should be:
+---
 
-Bound
-5️⃣ Deploy Applications
+## 🥈 Phase 2 – Install AWS CSI Drivers
 
-Example:
+### EBS CSI
 
-kubectl apply -f jenkins-deployment.yaml
-kubectl apply -f jenkins-service.yaml
+```bash
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+helm install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver -n kube-system
+```
 
-Check pods:
+### EFS CSI
 
-kubectl get pods -owide
-🧪 Testing Storage
-EBS Test
+```bash
+helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
+helm install aws-efs-csi-driver aws-efs-csi-driver/aws-efs-csi-driver -n kube-system
+```
+
+⚠ EFS filesystem must be created manually in AWS.
+
+---
+
+## 🥉 Phase 3 – Storage Testing
+
+### Static PV Test
+
+```bash
+kubectl apply -f pv.yaml
+kubectl apply -f pvc.yaml
+```
+
+### EBS Dynamic Test
+
+```bash
+kubectl apply -f ebs-sc.yaml
+kubectl apply -f ebs-test-pvc.yaml
 kubectl apply -f ebs-test-pod.yaml
+```
 
-Exec inside pod and create file to verify persistence.
+### EFS RWX Test
 
-EFS Test (Multi-Pod)
+```bash
+kubectl apply -f efs-sc.yaml
+kubectl apply -f efs-test-pvc.yaml
 kubectl apply -f efs-test-pod.yaml
 kubectl apply -f efs-test-pod-2.yaml
+```
 
-Create file in one pod → verify visibility in second pod.
+---
 
-🌐 Accessing Applications
+## 🧑‍💻 Phase 4 – Jenkins Deployment
 
-If using LoadBalancer service:
+```bash
+kubectl apply -f jenkins-deployment.yaml
+kubectl apply -f jenkins-service.yaml
+```
 
+Or use EFS-backed Jenkins:
+
+```bash
+kubectl apply -f jenkins-efs-test.yaml
+```
+
+---
+
+## 🌐 Phase 5 – Nginx Scheduling Lab
+
+Try:
+
+```bash
+kubectl apply -f nginx_deploy_nodeselector.yaml
+kubectl apply -f nginx_deploy_nodeaff_hard_rule.yaml
+kubectl apply -f nginx_deploy_nodeaff_soft_rule.yaml
+kubectl apply -f nginx_deploy_podaff.yaml
+kubectl apply -f nginx_deploy_podantiaff.yaml
+```
+
+Observe pod placement using:
+
+```bash
+kubectl get pods -owide
+```
+
+---
+
+## ☕ Phase 6 – Deploy Tomcat
+
+```bash
+kubectl apply -f tomcat-deployment.yaml
+kubectl apply -f tomcat_service_lb.yaml
+```
+
+Check external IP:
+
+```bash
 kubectl get svc
+```
 
-Copy EXTERNAL-IP once assigned.
+---
 
-📊 Learning Objectives Covered
+# 🔄 Deployment Flow
 
-kubeadm cluster setup
+```
+kubectl apply
+    ↓
+API Server
+    ↓
+Scheduler
+    ↓
+PVC Created
+    ↓
+CSI Driver Provisions Storage
+    ↓
+PV Bound
+    ↓
+Pod Starts
+    ↓
+Service Exposed
+    ↓
+AWS LoadBalancer Created
+```
 
-Static vs Dynamic PV
+---
 
-EBS vs EFS storage differences
+# ⚠ Common Issues
 
-RWX vs RWO access modes
+### PVC Pending
 
-HostPath vs CSI drivers
+* CSI driver not installed
+* Wrong fileSystemId
+* IAM role missing
+* Security group blocking NFS (2049)
 
-ReplicaSets vs Deployments
+### CrashLoopBackOff
 
-AWS integration with Kubernetes
+* Volume permission issue
+* Wrong mount path
 
-Cloud Controller Manager concepts
+### LoadBalancer Pending
 
-⚠ Common Issues & Fixes
-Problem	Cause	Fix
-PVC Pending	No CSI driver	Install driver
-PVC Pending (EFS)	No EFS File System	Create in AWS
-Pod CrashLoop	Permission issue	Fix volume ownership
-LoadBalancer pending	No AWS controller	Install LB controller
-🎯 Production Recommendations
+* AWS LB controller not installed
+* IAM policy missing
 
-Use EFS for Jenkins home
+---
 
-Use EBS for databases
+# 🧠 Production Best Practices
 
-Avoid HostPath in production
+* Use Deployments instead of bare Pods
+* Use EFS for shared workloads (RWX)
+* Use EBS for stateful block storage
+* Use Ingress + ALB instead of NodePort
+* Enable IRSA for secure AWS access
 
-Use Deployment instead of Pod/RS
+---
 
-Enable IAM roles for service accounts (IRSA)
+# 🎯 Outcome
 
-Use Ingress + ALB instead of NodePort
+After completing this lab, you will understand:
+
+* Kubernetes storage internals
+* CSI driver architecture
+* Advanced scheduling strategies
+* AWS integration patterns
+* Real-world DevOps troubleshooting
+
+---
+
+# 📜 License
+
+Open-source lab project for educational purposes.
+
+---
+
+If you'd like next:
+
+* 📊 Visual PNG architecture diagram
+* 🧩 Terraform infra version
+* 🔁 CI/CD integration with Jenkins
+* 📘 Interview question guide
+
+Let me know 🚀
