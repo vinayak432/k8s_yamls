@@ -311,12 +311,3 @@ Service Exposed
 Educational DevOps Lab Project
 
 ---
-
-If you'd like, I can also generate:
-
-* 📊 Visual architecture diagram (PNG)
-* 🔐 Production-ready Jenkins Helm version
-* 🔁 CI/CD pipeline example
-* 📘 Interview Q&A based on this setup
-
-Let me know 🚀
