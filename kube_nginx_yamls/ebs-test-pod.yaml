@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ebs-test-pod
+spec:
+  containers:
+  - name: app
+    image: nginx
+    volumeMounts:
+    - name: ebs-vol
+      mountPath: /usr/share/nginx/html
+  volumes:
+  - name: ebs-vol
+    persistentVolumeClaim:
+      claimName: ebs-test-pvc
