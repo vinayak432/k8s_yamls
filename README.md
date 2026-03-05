@@ -1,3 +1,12 @@
+# 🚀 Kubernetes on AWS – Complete Workload & Storage Lab
+
+![Kubernetes](https://img.shields.io/badge/Kubernetes-1.33-blue?logo=kubernetes)
+![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20EBS%20%7C%20EFS-orange?logo=amazonaws)
+![Storage](https://img.shields.io/badge/Storage-HostPath%20%7C%20EBS%20%7C%20EFS-yellow)
+![Workloads](https://img.shields.io/badge/Workloads-Jenkins%20%7C%20Nginx%20%7C%20Tomcat-green)
+![CNI](https://img.shields.io/badge/CNI-Calico-blue)
+![Containerd](https://img.shields.io/badge/Runtime-Containerd-5c4ee5)
+
 🚀 Kubernetes DevOps Lab – Jenkins, Storage, Scheduling & Workloads
 
 📌 Overview
@@ -332,17 +341,6 @@ https://github.com/vinayak432
 =====================================================
 ====================================================
 ========================================================
-
-
-# 🚀 Kubernetes on AWS – Complete Workload & Storage Lab
-
-![Kubernetes](https://img.shields.io/badge/Kubernetes-1.33-blue?logo=kubernetes)
-![AWS](https://img.shields.io/badge/AWS-EC2%20%7C%20EBS%20%7C%20EFS-orange?logo=amazonaws)
-![Storage](https://img.shields.io/badge/Storage-HostPath%20%7C%20EBS%20%7C%20EFS-yellow)
-![Workloads](https://img.shields.io/badge/Workloads-Jenkins%20%7C%20Nginx%20%7C%20Tomcat-green)
-![CNI](https://img.shields.io/badge/CNI-Calico-blue)
-![Containerd](https://img.shields.io/badge/Runtime-Containerd-5c4ee5)
-
 ---
 
 # 📌 Overview
