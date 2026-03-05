@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_ENV: production
+  APP_PORT: "8080"
+  LOG_LEVEL: debug
+  config.properties: |
+    timeout=30
+    retries=3

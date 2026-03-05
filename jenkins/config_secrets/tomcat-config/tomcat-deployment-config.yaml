@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: tomcat-deployment
+
+spec:
+  replicas: 2
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+
+  selector:
+    matchLabels:
+      app: tomcat
+
+  template:
+    metadata:
+      labels:
+        app: tomcat
+
+    spec:
+      containers:
+      - name: tomcat
+        image: tomcat:9
+        ports:
+        - containerPort: 8080
+
+        volumeMounts:
+        - name: tomcat-config-volume
+          mountPath: /usr/local/tomcat/conf/tomcat-users.xml
+          subPath: tomcat-users.xml
+
+      volumes:
+      - name: tomcat-config-volume
+        configMap:
+          name: tomcat-config
