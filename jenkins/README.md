@@ -7,73 +7,47 @@
 ![Storage](https://img.shields.io/badge/Storage-HostPath%20%7C%20EBS%20%7C%20EFS-yellow)
 ![Runtime](https://img.shields.io/badge/Containerd-Enabled-5c4ee5)
 
-
-
 🚀 Jenkins on Kubernetes — AWS Storage & Configuration Lab
-
-
+4
 📌 Overview
 
 This repository contains Kubernetes manifests for deploying Jenkins and experimenting with multiple storage and configuration strategies on an AWS-based Kubernetes cluster.
 
-The lab demonstrates how Jenkins behaves with different:
+The lab demonstrates how Jenkins behaves when deployed with different Kubernetes resources and storage backends.
 
-Kubernetes workloads
+It covers:
 
-Persistent storage types
+🧱 Pod, ReplicaSet, Deployment, DaemonSet
 
-Configuration management methods
+💾 Static Persistent Volumes
 
-Container registry authentication
+📦 Dynamic AWS EBS provisioning (RWO)
 
-This project is designed as a hands-on DevOps learning lab.
+📂 Dynamic AWS EFS provisioning (RWX)
 
-📚 Table of Contents
+🖥 HostPath storage
 
-Overview
+⚙ ConfigMaps
 
-Architecture
+🔐 Secrets
 
-Repository Structure
+📦 Private Docker registry image pulls
 
-Jenkins Workloads
+🌐 Service exposure
 
-Storage Labs
+☁ AWS cloud integration
 
-ConfigMaps
+This lab is designed to help understand real DevOps infrastructure patterns used in production Kubernetes clusters.
 
-Secrets
-
-Private Docker Registry
-
-AWS Integration
-
-Deployment Guide
-
-Troubleshooting
-
-Production Recommendations
-
-🏗 Architecture Overview
-              AWS EC2 Kubernetes Cluster
-                     (kubeadm)
-
-              ┌─────────────────┐
-              │  Control Plane  │
-              │  API Server     │
-              │  Scheduler      │
-              └────────┬────────┘
-                       │
-               ┌───────▼────────┐
-               │   Worker Node  │
-               │  containerd    │
-               │  Jenkins Pod   │
-               └───────┬────────┘
-                       │
-      ┌────────────────┼────────────────┐
-      │                │                │
-   HostPath         EBS CSI          EFS CSI
- (Local Disk)     (Block Storage)   (Shared Storage)
+🧠 Kubernetes Concepts Covered
+Category	Topics
+Workloads	Pod, ReplicaSet, Deployment, DaemonSet
+Storage	HostPath, Static PV, Dynamic EBS, Dynamic EFS
+Configuration	ConfigMaps
+Security	Secrets
+Container Registry	imagePullSecrets
+Networking	Kubernetes Services
+Cloud Integration	AWS storage drivers
 📂 Repository Structure
 jenkins/
 │
@@ -106,17 +80,17 @@ jenkins/
 ├── secret-pod-registry.yaml
 │
 └── aws-ccm-values.yaml
-🧱 Jenkins Workloads
+🧱 Jenkins Workload Types
 
-This repository demonstrates multiple Kubernetes workload types.
+This lab shows multiple ways to run Jenkins.
 
 File	Description
-jenkins-pod.yaml	Basic Jenkins Pod
-jenkins-rs.yaml	Jenkins ReplicaSet
-jenkins-deployment.yaml	Production Deployment
+jenkins-pod.yaml	Basic single Jenkins Pod
+jenkins-rs.yaml	ReplicaSet
+jenkins-deployment.yaml	Production-style Deployment
 jenkins-daemonset.yaml	One Jenkins pod per node
-jenkins-service.yaml	Service to expose Jenkins
-Kubernetes Workload Hierarchy
+jenkins-service.yaml	Expose Jenkins via Service
+Kubernetes Deployment Flow
 Deployment
     ↓
 ReplicaSet
@@ -127,33 +101,38 @@ Container (Jenkins)
 
 Recommended workload:
 
-✅ Deployment
+✔ Deployment
 
 💾 Storage Labs
 
-This lab demonstrates four Kubernetes storage approaches.
+This repository demonstrates four different Kubernetes storage models.
 
 🖥 HostPath Storage
+4
 
 File:
 
 jen_host.yaml
 
-HostPath mounts a node directory into a pod.
+HostPath mounts a node directory directly into a pod.
+
+Architecture:
 
 Worker Node Disk
-        ↓
+      ↓
 HostPath Volume
-        ↓
+      ↓
 Jenkins Pod
 
 ⚠ Not recommended for production.
 
-Used mainly for:
+Used for:
 
 local labs
 
-development clusters
+test clusters
+
+Minikube environments
 
 📦 Static Persistent Volume
 
@@ -163,7 +142,9 @@ pv.yaml
 pvc.yaml
 pvc_mnt.yaml
 
-Static provisioning means admin manually creates the PV.
+This demonstrates manual PV provisioning.
+
+Flow:
 
 Admin Creates PV
         ↓
@@ -172,20 +153,22 @@ PVC Requested
 PV Bound
         ↓
 Pod Uses Storage
-💾 AWS EBS Dynamic Provisioning
+
+Useful when storage is provisioned outside Kubernetes.
+
+💾 AWS EBS Dynamic Provisioning (RWO)
+4
 
 Files:
 
 ebs-sc.yaml
 ebs-test-pvc.yaml
 ebs-test-pod.yaml
-
-Characteristics:
-
+Characteristics
 Feature	Value
-Storage	AWS EBS
+Storage Type	Block Storage
 Access Mode	ReadWriteOnce
-Type	Block Storage
+Best Use	Single Jenkins instance
 
 Workflow:
 
@@ -198,10 +181,8 @@ EBS CSI Driver
 AWS EBS Volume Created
      ↓
 Pod Mounts Volume
-
-Best for single Jenkins instance.
-
-📂 AWS EFS Dynamic Provisioning
+📂 AWS EFS Dynamic Provisioning (RWX)
+4
 
 Files:
 
@@ -210,13 +191,11 @@ efs-test-pvc.yaml
 efs-test-pod.yaml
 efs-test-pod-2.yaml
 jenkins-efs-test.yaml
-
-Characteristics:
-
+Characteristics
 Feature	Value
-Storage	AWS EFS
+Storage Type	Shared File System
 Access Mode	ReadWriteMany
-Type	Shared File System
+Best Use	Multi-node Jenkins
 
 Workflow:
 
@@ -230,9 +209,10 @@ AWS EFS Filesystem
    ↑
 Pod B
 
-Best for multi-node Jenkins deployments.
+⚠ EFS filesystem must be created manually in AWS.
 
 ⚙ Configuration Management (ConfigMaps)
+4
 
 Files:
 
@@ -240,42 +220,43 @@ config_map.yaml
 config-pod.yaml
 config_deployment_pod.yaml
 
-ConfigMaps allow separating configuration from container images.
+ConfigMaps allow separating application configuration from container images.
 
-Example flow:
+Flow:
 
 ConfigMap
-     ↓
+   ↓
 Environment Variables
-     ↓
+   ↓
 Pod / Deployment
 
-Commands:
+Example command:
 
 kubectl apply -f config_map.yaml
 kubectl get configmap
-🔐 Kubernetes Secrets
+🔐 Secrets & Private Docker Registry
+4
 
 File:
 
 secret-pod-registry.yaml
 
-Secrets store sensitive data:
+Secrets store sensitive information:
+
+registry credentials
 
 passwords
 
 tokens
-
-registry credentials
 
 certificates
 
 Check secrets:
 
 kubectl get secrets
-📦 Private Docker Registry Image Pull
+📦 Pull Image From Private Docker Registry
 
-Create Docker registry secret:
+Create registry secret:
 
 kubectl create secret docker-registry regcred \
 --docker-server=https://index.docker.io/v1/ \
@@ -296,11 +277,11 @@ spec:
 Workflow:
 
 Private Docker Registry
-        ↓
+       ↓
 ImagePullSecret
-        ↓
+       ↓
 Kubernetes Pod
-        ↓
+       ↓
 Container Image Pulled
 ☁ AWS Integration
 
@@ -308,24 +289,44 @@ File:
 
 aws-ccm-values.yaml
 
-Used for configuring AWS Cloud Controller Manager.
+Used when configuring AWS Cloud Controller Manager.
 
-This allows Kubernetes to integrate with AWS services like:
+Provides integration with:
 
-Load Balancers
+AWS load balancers
 
-Storage
+node lifecycle management
 
-Node lifecycle management
+cloud storage resources
 
-🚀 Deployment Guide
+🏗 Architecture Overview
+              AWS EC2 Kubernetes Cluster
+                     (kubeadm)
+
+              ┌─────────────────┐
+              │  Control Plane  │
+              │ API Server      │
+              │ Scheduler       │
+              └────────┬────────┘
+                       │
+               ┌───────▼────────┐
+               │   Worker Node  │
+               │  containerd    │
+               │  Jenkins Pod   │
+               └───────┬────────┘
+                       │
+      ┌────────────────┼────────────────┐
+      │                │                │
+   HostPath         EBS CSI          EFS CSI
+ (Local Disk)     (Block Storage)   (Shared Storage)
+🚀 Step-by-Step Deployment
 Verify Cluster
 kubectl get nodes
 kubectl get pods -n kube-system
 Deploy Jenkins Pod
 kubectl apply -f jenkins-pod.yaml
 kubectl get pods
-Deploy Jenkins Deployment
+Deploy Jenkins with Deployment
 kubectl apply -f jenkins-deployment.yaml
 kubectl apply -f jenkins-service.yaml
 
@@ -353,53 +354,69 @@ kubectl apply -f efs-test-pvc.yaml
 kubectl apply -f efs-test-pod.yaml
 kubectl apply -f efs-test-pod-2.yaml
 kubectl apply -f jenkins-efs-test.yaml
-⚠ Troubleshooting
+🔄 Deployment Workflow
+kubectl apply
+      ↓
+API Server
+      ↓
+Scheduler
+      ↓
+PVC Created
+      ↓
+CSI Driver Creates Storage
+      ↓
+PV Bound
+      ↓
+Jenkins Pod Starts
+      ↓
+Service Exposed
+⚠ Common Issues
 PVC Pending
 
 Possible reasons:
 
-CSI driver not installed
+CSI driver missing
 
-wrong filesystem ID
+wrong fileSystemId
 
-IAM permissions missing
+IAM permission issues
 
 CrashLoopBackOff
 
-Possible reasons:
+Possible causes:
 
-incorrect volume mount
+incorrect mount path
 
 permission issues
 
 Jenkins Not Accessible
 
-Possible reasons:
+Possible causes:
 
 incorrect service type
 
-NodePort blocked in AWS security group
+NodePort blocked in security group
 
 🎯 Production Recommendations
 
 ✔ Use EFS for Jenkins home directory
 ✔ Deploy Jenkins using Deployment
 ✔ Use Ingress + AWS ALB
-✔ Enable IAM Roles for Service Accounts (IRSA)
-❌ Avoid HostPath in production
+✔ Enable IAM Roles for Service Accounts
+❌ Avoid HostPath storage in production
 
 📘 Key Takeaways
 Feature	Purpose
 EBS	Block storage for single pod
 EFS	Shared storage across nodes
 ConfigMap	External configuration
-Secret	Secure credentials
-imagePullSecrets	Pull private images
+Secret	Secure credential storage
+imagePullSecrets	Pull private container images
 👨‍💻 Author
 
 Vinayak
 
 DevOps | Kubernetes | AWS
 
-GitHub
+GitHub:
 https://github.com/vinayak432
