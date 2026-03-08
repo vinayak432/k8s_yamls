@@ -37,7 +37,7 @@ metadata:
   name: jenkins-deployment
 
 spec:
-  replicas: 1
+  replicas: 2
 
   selector:
     matchLabels:
