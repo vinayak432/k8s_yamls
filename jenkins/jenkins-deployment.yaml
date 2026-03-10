@@ -5,7 +5,7 @@ metadata:
   name: jenkins-deployment
 
 spec:
-  replicas: 2
+  replicas: 4
 
   strategy:
     type: RollingUpdate
@@ -28,3 +28,7 @@ spec:
         image: jenkins/jenkins:lts
         ports:
         - containerPort: 8080
+        env:
+          - name: JENKINS_OPTS
+            value: "--prefix=/jenkins"
+
