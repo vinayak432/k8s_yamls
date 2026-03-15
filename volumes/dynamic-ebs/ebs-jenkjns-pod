@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jenkins-pod
+spec:
+  containers:
+  - name: jenkins
+    image: jenkins/jenkins:lts
+    ports:
+      - containerPort: 8080
+    volumeMounts:
+      - name: jenkins-ebs
+        mountPath: /var/jenkins_home
+  volumes:
+  - name: jenkins-ebs
+    persistentVolumeClaim:
+      claimName: jenkins-ebs-pvc
